@@ -80,14 +80,14 @@ impl Complex {
         return self.imaginary.atan2(self.real);
     }
 
-    pub const fn negative(&self) -> Self {
+    pub const fn neg(&self) -> Self {
         return Self {
             real: -self.real,
             imaginary: -self.imaginary
         };
     }
 
-    pub fn inverse(&self) -> Self {
+    pub fn inv(&self) -> Self {
         let divisor = self.real.powi(2) + self.imaginary.powi(2);
 
         return Self {
@@ -96,7 +96,7 @@ impl Complex {
         };
     }
 
-    pub const fn conjugate(&self) -> Self {
+    pub const fn conj(&self) -> Self {
         return Self {
             real: self.real,
             imaginary: -self.imaginary
