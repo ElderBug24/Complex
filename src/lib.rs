@@ -2,11 +2,11 @@ use std::fmt::{self, Debug, Display};
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Deref, DerefMut, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Not, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 
-use num_traits::{Num, ConstZero, ConstOne, Zero, One, Float, FloatConst, Signed, Inv, Pow};
+use num_traits::{ConstOne, ConstZero, One, Zero, Float, FloatConst, Inv, Pow};
 
 
-pub trait ComplexInnerType: Num + Zero + One + Float + Signed + Clone + PartialEq + Debug + Display {}
-impl<T> ComplexInnerType for T where T: Num + Zero + One + Float + Signed + Clone + PartialEq + Debug + Display {}
+pub trait ComplexInnerType: Float + Clone + Display {}
+impl<T> ComplexInnerType for T where T: Float + Clone + Display {}
 
 #[derive(Clone, Copy, PartialEq)]
 #[repr(C)]
@@ -30,6 +30,20 @@ impl<N: ComplexInnerType> Complex<N> {
         };
     }
 
+    pub fn zero() -> Self {
+        return Self {
+            real: N::zero(),
+            imaginary: N::zero()
+        };
+    }
+
+    pub fn one() -> Self {
+        return Self {
+            real: N::one(),
+            imaginary: N::zero()
+        };
+    }
+
     pub fn i() -> Self {
         return Self {
             real: N::zero(),
@@ -48,21 +62,21 @@ impl<N: ComplexInnerType> Complex<N> {
         // assert!(bytes.len() == std::mem::size_of::<Self>());
         let ptr = bytes.as_ptr() as *const Self;
 
-        return ptr.read_unaligned();
+        return unsafe { ptr.read_unaligned() };
     }
 
-    pub unsafe fn as_bytes(&self) -> &[u8] {
-        return std::slice::from_raw_parts((self as *const Self) as *const u8, std::mem::size_of::<Self>());
+    pub fn as_bytes(&self) -> &[u8] {
+        return unsafe { std::slice::from_raw_parts((self as *const Self) as *const u8, std::mem::size_of::<Self>()) };
     }
 
-    pub unsafe fn as_bytes_mut(&mut self) -> &mut [u8] {
-        return std::slice::from_raw_parts_mut((self as *mut Self) as *mut u8, std::mem::size_of::<Self>());
+    pub fn as_bytes_mut(&mut self) -> &mut [u8] {
+        return unsafe { std::slice::from_raw_parts_mut((self as *mut Self) as *mut u8, std::mem::size_of::<Self>()) };
     }
 
     pub unsafe fn to_bytes<const LEN: usize>(&self) -> [u8; LEN] {
         // assert_eq!(LEN, std::mem::size_of::<Self>());
-        let mut arr: [u8; LEN] = std::mem::MaybeUninit::uninit().assume_init();
-        std::ptr::copy_nonoverlapping(self as *const Self as *const u8, arr.as_mut_ptr(), LEN);
+        let mut arr: [u8; LEN] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        unsafe { std::ptr::copy_nonoverlapping(self as *const Self as *const u8, arr.as_mut_ptr(), LEN) };
 
         return arr;
     }
@@ -95,6 +109,15 @@ impl<N: ComplexInnerType> Complex<N> {
 
     pub fn argument(&self) -> N {
         return self.imaginary.atan2(self.real);
+    }
+
+    pub fn inv(self) -> Self {
+        let divisor = self.real * self.real + self.imaginary * self.imaginary;
+
+        return Self {
+            real: self.real / divisor,
+            imaginary: -self.imaginary / divisor
+        };
     }
 
     pub fn conj(&self) -> Self {
@@ -159,6 +182,15 @@ impl<N: ComplexInnerType> Complex<N> {
 
     pub fn powf(&self, exponent: N) -> Self {
         return (self.ln() * Self::from_real(exponent)).exp();
+    }
+
+    pub fn powz(&self, other: &Self) -> Self {
+        let r = self.amplitude();
+        let arg = self.argument();
+        let m = r.powf(other.real) * (-other.imaginary * arg).exp();
+        let theta = other.imaginary * r.ln() + other.real * arg;
+
+        return Self::from_argument_amplitude(theta, m);
     }
 }
 
@@ -536,12 +568,7 @@ impl<N: ComplexInnerType> Inv for Complex<N> {
     type Output = Self;
 
     fn inv(self) -> Self::Output {
-        let divisor = self.real * self.real + self.imaginary * self.imaginary;
-
-        return Self {
-            real: self.real / divisor,
-            imaginary: -self.imaginary / divisor
-        };
+        return self.inv();
     }
 }
 
@@ -549,7 +576,7 @@ impl<N: ComplexInnerType> Pow<N> for Complex<N> {
     type Output = Self;
 
     fn pow(self, other: N) -> Self::Output {
-        return (self.ln() * Self::from_real(other)).exp();
+        return self.powf(other);
     }
 }
 
@@ -557,21 +584,13 @@ impl<N: ComplexInnerType> Pow<Self> for Complex<N> {
     type Output = Self;
 
     fn pow(self, other: Self) -> Self::Output {
-        let r = self.amplitude();
-        let arg = self.argument();
-        let m = r.powf(other.real) * (-other.imaginary * arg).exp();
-        let theta = other.imaginary * r.ln() + other.real * arg;
-
-        return Self::from_argument_amplitude(theta, m);
+        return self.powz(&other);
     }
 }
 
 impl<N: ComplexInnerType> Zero for Complex<N> {
     fn zero() -> Self {
-        return Self {
-            real: N::zero(),
-            imaginary: N::zero()
-        };
+        return Self::zero();
     }
 
     fn is_zero(&self) -> bool {
@@ -579,8 +598,7 @@ impl<N: ComplexInnerType> Zero for Complex<N> {
     }
 
     fn set_zero(&mut self) {
-        self.real = N::zero();
-        self.imaginary = N::zero();
+        *self = Self::zero();
     }
 }
 
@@ -593,10 +611,7 @@ impl<N: ComplexInnerType+ConstZero> ConstZero for Complex<N> {
 
 impl<N: ComplexInnerType> One for Complex<N> {
     fn one() -> Self {
-        return Self {
-            real: N::one(),
-            imaginary: N::zero()
-        };
+        return Self::one();
     }
 
     fn is_one(&self) -> bool {
@@ -604,8 +619,7 @@ impl<N: ComplexInnerType> One for Complex<N> {
     }
 
     fn set_one(&mut self) {
-        self.real = N::one();
-        self.imaginary = N::zero();
+        *self = Self::one();
     }
 }
 
@@ -777,15 +791,15 @@ impl<N: ComplexInnerType> Default for Complex<N> {
 
 impl<N: ComplexInnerType> Display for Complex<N> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let rsign = if self.real.is_negative() { '-' } else { '+' };
-        let isign = if self.imaginary.is_negative() { '-' } else { '+' };
+        let rsign = if self.real.is_sign_negative() { '-' } else { '+' };
+        let isign = if self.imaginary.is_sign_negative() { '-' } else { '+' };
         write!(formatter, "( {rsign} {} {isign} {}i )", self.real.abs(), self.imaginary.abs())
     }
 }
 
 impl<N: ComplexInnerType> Debug for Complex<N> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "Complex {{ real: {}, imaginary: {}i )", self.real, self.imaginary)
+        write!(formatter, "Complex {{ real: {}, imaginary: {}i }}", self.real, self.imaginary)
     }
 }
 
