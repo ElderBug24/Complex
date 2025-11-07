@@ -2,7 +2,7 @@ use std::fmt::{self, Debug, Display};
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Deref, DerefMut, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Not, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 
-use num_traits::{Num, Zero, One, Float, Signed, Inv, Pow};
+use num_traits::{Num, ConstZero, ConstOne, Zero, One, Float, FloatConst, Signed, Inv, Pow};
 
 
 pub trait ComplexInnerType: Num + Zero + One + Float + Signed + Clone + PartialEq + Debug + Display {}
@@ -104,6 +104,20 @@ impl<N: ComplexInnerType> Complex<N> {
         };
     }
 
+    pub fn abs(&self) -> Self {
+        return Self {
+            real: self.real.abs(),
+            imaginary: self.imaginary.abs()
+        };
+    }
+
+    pub fn signum(&self) -> Self {
+        return Self {
+            real: self.real.signum(),
+            imaginary: self.imaginary.signum()
+        };
+    }
+
     pub fn ln(&self) -> Self {
         return Self {
             real: self.amplitude().ln(),
@@ -148,6 +162,17 @@ impl<N: ComplexInnerType> Complex<N> {
     }
 }
 
+impl<N: ComplexInnerType> Add<N> for Complex<N> {
+    type Output = Self;
+
+    fn add(self, other: N) -> Self::Output {
+        return Self {
+            real: self.real + other,
+            imaginary: self.imaginary
+        };
+    }
+}
+
 impl<N: ComplexInnerType> Add for Complex<N> {
     type Output = Self;
 
@@ -156,6 +181,12 @@ impl<N: ComplexInnerType> Add for Complex<N> {
             real: self.real + other.real,
             imaginary: self.imaginary + other.imaginary
         };
+    }
+}
+
+impl<N: ComplexInnerType> AddAssign<N> for Complex<N> {
+    fn add_assign(&mut self, other: N) {
+        *self = self.add(other);
     }
 }
 
@@ -260,6 +291,17 @@ impl<N: ComplexInnerType> DerefMut for Complex<N> {
     }
 }
 
+impl<N: ComplexInnerType> Div<N> for Complex<N> {
+    type Output = Self;
+
+    fn div(self, other: N) -> Self {
+        return Self {
+            real: self.real * other,
+            imaginary: self.imaginary * other
+        };
+    }
+}
+
 impl<N: ComplexInnerType> Div for Complex<N> {
     type Output = Self;
 
@@ -269,6 +311,12 @@ impl<N: ComplexInnerType> Div for Complex<N> {
             real: (self.real * other.real + self.imaginary * other.imaginary) / denominator,
             imaginary: (self.imaginary * other.real - self.real * other.imaginary) / denominator
         };
+    }
+}
+
+impl<N: ComplexInnerType> DivAssign<N> for Complex<N> {
+    fn div_assign(&mut self, other: N) {
+        *self = self.div(other);
     }
 }
 
@@ -298,6 +346,17 @@ impl<N: ComplexInnerType> IndexMut<bool> for Complex<N> {
     }
 }
 
+impl<N: ComplexInnerType> Mul<N> for Complex<N> {
+    type Output = Self;
+
+    fn mul(self, other: N) -> Self {
+        return Self {
+            real: self.real * other,
+            imaginary: self.imaginary * other
+        };
+    }
+}
+
 impl<N: ComplexInnerType> Mul for Complex<N> {
     type Output = Self;
 
@@ -306,6 +365,12 @@ impl<N: ComplexInnerType> Mul for Complex<N> {
             real: self.real * other.real - self.imaginary * other.imaginary,
             imaginary: self.real * other.imaginary + self.imaginary * other.real
         };
+    }
+}
+
+impl<N: ComplexInnerType> MulAssign<N> for Complex<N> {
+    fn mul_assign(&mut self, other: N) {
+        *self = self.mul(other);
     }
 }
 
@@ -433,6 +498,17 @@ impl<N: ComplexInnerType> ShrAssign<usize> for Complex<N> {
     }
 }
 
+impl<N: ComplexInnerType> Sub<N> for Complex<N> {
+    type Output = Self;
+
+    fn sub(self, other: N) -> Self::Output {
+        return Self {
+            real: self.real - other,
+            imaginary: self.imaginary
+        };
+    }
+}
+
 impl<N: ComplexInnerType> Sub for Complex<N> {
     type Output = Self;
 
@@ -441,6 +517,12 @@ impl<N: ComplexInnerType> Sub for Complex<N> {
             real: self.real - other.real,
             imaginary: self.imaginary - other.imaginary
         };
+    }
+}
+
+impl<N: ComplexInnerType> SubAssign<N> for Complex<N> {
+    fn sub_assign(&mut self, other: N) {
+        *self = self.sub(other);
     }
 }
 
@@ -502,6 +584,13 @@ impl<N: ComplexInnerType> Zero for Complex<N> {
     }
 }
 
+impl<N: ComplexInnerType+ConstZero> ConstZero for Complex<N> {
+    const ZERO: Self = Self {
+        real: N::ZERO,
+        imaginary: N::ZERO
+    };
+}
+
 impl<N: ComplexInnerType> One for Complex<N> {
     fn one() -> Self {
         return Self {
@@ -517,6 +606,166 @@ impl<N: ComplexInnerType> One for Complex<N> {
     fn set_one(&mut self) {
         self.real = N::one();
         self.imaginary = N::zero();
+    }
+}
+
+impl<N: ComplexInnerType+ConstZero+ConstOne> ConstOne for Complex<N> {
+    const ONE: Self = Self {
+        real: N::ONE,
+        imaginary: N::ZERO
+    };
+}
+
+impl<N: ComplexInnerType+ConstZero+FloatConst> FloatConst for Complex<N> {
+    fn E() -> Self {
+        return Self {
+            real: N::E(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_1_PI() -> Self {
+        return Self {
+            real: N::FRAC_1_PI(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_1_SQRT_2() -> Self {
+        return Self {
+            real: N::FRAC_1_SQRT_2(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_2_PI() -> Self {
+        return Self {
+            real: N::FRAC_2_PI(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_2_SQRT_PI() -> Self {
+        return Self {
+            real: N::FRAC_2_SQRT_PI(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_PI_2() -> Self {
+        return Self {
+            real: N::FRAC_PI_2(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_PI_3() -> Self {
+        return Self {
+            real: N::FRAC_PI_3(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_PI_4() -> Self {
+        return Self {
+            real: N::FRAC_PI_4(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_PI_6() -> Self {
+        return Self {
+            real: N::FRAC_PI_6(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn FRAC_PI_8() -> Self {
+        return Self {
+            real: N::FRAC_PI_8(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LN_10() -> Self {
+        return Self {
+            real: N::LN_10(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LN_2() -> Self {
+        return Self {
+            real: N::LN_2(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LOG10_E() -> Self {
+        return Self {
+            real: N::LOG10_E(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LOG2_E() -> Self {
+        return Self {
+            real: N::LOG2_E(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn PI() -> Self {
+        return Self {
+            real: N::PI(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn SQRT_2() -> Self {
+        return Self {
+            real: N::SQRT_2(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn TAU() -> Self {
+        return Self {
+            real: N::TAU(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LOG10_2() -> Self {
+        return Self {
+            real: N::LOG10_2(),
+            imaginary: N::ZERO
+        };
+    }
+
+    fn LOG2_10() -> Self {
+        return Self {
+            real: N::LOG2_10(),
+            imaginary: N::ZERO
+        };
+    }
+}
+
+impl<N: ComplexInnerType> From<(N, N)> for Complex<N> {
+    fn from((real, imaginary): (N, N)) -> Self {
+        return Self::new(real, imaginary);
+    }
+}
+
+impl<N: ComplexInnerType> From<N> for Complex<N> {
+    fn from(real: N) -> Self {
+        return Self::from_real(real);
+    }
+}
+
+impl<N: ComplexInnerType> Into<(N, N)> for Complex<N> {
+    fn into(self) -> (N, N) {
+        return (self.real, self.imaginary);
     }
 }
 
