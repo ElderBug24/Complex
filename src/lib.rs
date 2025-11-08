@@ -1,20 +1,17 @@
 pub use std::fmt::{self, Debug, Display};
 pub use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Deref, DerefMut, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Not, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 
-use num_traits::{Bounded, AsPrimitive, FromPrimitive, NumCast, ToPrimitive, ConstOne, ConstZero, One, Zero, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, Float, FloatConst, Inv, Pow};
+pub use num_traits::{Bounded, AsPrimitive, FromPrimitive, NumCast, ToPrimitive, ConstOne, ConstZero, One, Zero, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedSub, Float, FloatConst, Inv, Pow};
 
-
-pub trait ComplexInnerType: Float {}
-impl<T> ComplexInnerType for T where T: Float {}
 
 #[derive(Clone, Copy, PartialEq)]
 #[repr(C)]
-pub struct Complex<N: ComplexInnerType> {
+pub struct Complex<N: Float> {
     pub real: N,
     pub imaginary: N
 }
 
-impl<N: ComplexInnerType> Complex<N> {
+impl<N: Float> Complex<N> {
     pub const fn new(real: N, imaginary: N) -> Self {
         return Self {
             real: real,
@@ -394,105 +391,105 @@ impl<N: ComplexInnerType> Complex<N> {
         *self = Self::bitxor(self, &other);
     }
 
-    pub fn shl(&self, rhs: usize) -> Self {
-        let size = std::mem::size_of::<Self>();
-        let mut bytes = vec![0u8; size];
-
-        unsafe {
-            let self_ptr = self as *const Self as *const u8;
-            for i in 0..size {
-                bytes[i] = *self_ptr.add(i);
-            }
-
-            let byte_shift = rhs / 8;
-            let bit_shift = rhs % 8;
-
-            if byte_shift > 0 {
-                for i in 0..size {
-                    bytes[i] = if i + byte_shift < size { bytes[i + byte_shift] } else { 0 };
-                }
-            }
-
-            if bit_shift > 0 {
-                let mut carry = 0u8;
-                for i in (0..size).rev() {
-                    let new_carry = bytes[i] >> (8 - bit_shift);
-                    bytes[i] = (bytes[i] << bit_shift) | carry;
-                    carry = new_carry;
-                }
-            }
-
-            let mut result: Self = std::mem::zeroed();
-            let r_ptr = &mut result as *mut Self as *mut u8;
-            for i in 0..size {
-                *r_ptr.add(i) = bytes[i];
-            }
-
-            return result;
-        }
-    }
-
-    pub fn shl_assign(&mut self, other: usize) {
-        *self = Self::shl(self, other);
-    }
-
-    pub fn checked_shl(&self, rhs: usize) -> Option<Self> {
-        if rhs < 2 * std::mem::size_of::<Self>() {
-            return Some(Self::shl(self, rhs));
-        } else {
-            return None;
-        }
-    }
-
-    pub fn shr(&self, rhs: usize) -> Self {
-        let size = std::mem::size_of::<Self>();
-        let mut bytes = vec![0u8; size];
-
-        unsafe {
-            let self_ptr = self as *const Self as *const u8;
-            for i in 0..size {
-                bytes[i] = *self_ptr.add(i);
-            }
-
-            let byte_shift = rhs / 8;
-            let bit_shift = rhs % 8;
-
-            if byte_shift > 0 {
-                for i in (0..size).rev() {
-                    bytes[i] = if i >= byte_shift { bytes[i - byte_shift] } else { 0 };
-                }
-            }
-
-            if bit_shift > 0 {
-                let mut carry = 0u8;
-                for i in 0..size {
-                    let new_carry = bytes[i] << (8 - bit_shift);
-                    bytes[i] = (bytes[i] >> bit_shift) | carry;
-                    carry = new_carry;
-                }
-            }
-
-            let mut result: Self = std::mem::zeroed();
-            let r_ptr = &mut result as *mut Self as *mut u8;
-            for i in 0..size {
-                *r_ptr.add(i) = bytes[i];
-            }
-
-            return result;
-        }
-    }
-
-    pub fn shr_assign(&mut self, rhs: usize) {
-        *self = Self::shr(self, rhs);
-    }
-
-    pub fn checked_shr(&self, rhs: usize) -> Option<Self> {
-        if rhs < 2 * std::mem::size_of::<Self>() {
-            return Some(Self::shr(self, rhs));
-        } else {
-            return None;
-        }
-    }
+    // pub fn shl(&self, rhs: usize) -> Self {
+    //     let size = std::mem::size_of::<Self>();
+    //     let mut bytes = vec![0u8; size];
+    //
+    //     unsafe {
+    //         let self_ptr = self as *const Self as *const u8;
+    //         for i in 0..size {
+    //             bytes[i] = *self_ptr.add(i);
+    //         }
+    //
+    //         let byte_shift = rhs / 8;
+    //         let bit_shift = rhs % 8;
+    //
+    //         if byte_shift > 0 {
+    //             for i in 0..size {
+    //                 bytes[i] = if i + byte_shift < size { bytes[i + byte_shift] } else { 0 };
+    //             }
+    //         }
+    //
+    //         if bit_shift > 0 {
+    //             let mut carry = 0u8;
+    //             for i in (0..size).rev() {
+    //                 let new_carry = bytes[i] >> (8 - bit_shift);
+    //                 bytes[i] = (bytes[i] << bit_shift) | carry;
+    //                 carry = new_carry;
+    //             }
+    //         }
+    //
+    //         let mut result: Self = std::mem::zeroed();
+    //         let r_ptr = &mut result as *mut Self as *mut u8;
+    //         for i in 0..size {
+    //             *r_ptr.add(i) = bytes[i];
+    //         }
+    //
+    //         return result;
+    //     }
+    // }
+    //
+    // pub fn shl_assign(&mut self, other: usize) {
+    //     *self = Self::shl(self, other);
+    // }
+    //
+    // pub fn checked_shl(&self, rhs: usize) -> Option<Self> {
+    //     if rhs < 2 * std::mem::size_of::<Self>() {
+    //         return Some(Self::shl(self, rhs));
+    //     } else {
+    //         return None;
+    //     }
+    // }
+    //
+    // pub fn shr(&self, rhs: usize) -> Self {
+    //     let size = std::mem::size_of::<Self>();
+    //     let mut bytes = vec![0u8; size];
+    //
+    //     unsafe {
+    //         let self_ptr = self as *const Self as *const u8;
+    //         for i in 0..size {
+    //             bytes[i] = *self_ptr.add(i);
+    //         }
+    //
+    //         let byte_shift = rhs / 8;
+    //         let bit_shift = rhs % 8;
+    //
+    //         if byte_shift > 0 {
+    //             for i in (0..size).rev() {
+    //                 bytes[i] = if i >= byte_shift { bytes[i - byte_shift] } else { 0 };
+    //             }
+    //         }
+    //
+    //         if bit_shift > 0 {
+    //             let mut carry = 0u8;
+    //             for i in 0..size {
+    //                 let new_carry = bytes[i] << (8 - bit_shift);
+    //                 bytes[i] = (bytes[i] >> bit_shift) | carry;
+    //                 carry = new_carry;
+    //             }
+    //         }
+    //
+    //         let mut result: Self = std::mem::zeroed();
+    //         let r_ptr = &mut result as *mut Self as *mut u8;
+    //         for i in 0..size {
+    //             *r_ptr.add(i) = bytes[i];
+    //         }
+    //
+    //         return result;
+    //     }
+    // }
+    //
+    // pub fn shr_assign(&mut self, rhs: usize) {
+    //     *self = Self::shr(self, rhs);
+    // }
+    //
+    // pub fn checked_shr(&self, rhs: usize) -> Option<Self> {
+    //     if rhs < 2 * std::mem::size_of::<Self>() {
+    //         return Some(Self::shr(self, rhs));
+    //     } else {
+    //         return None;
+    //     }
+    // }
 
     pub fn index(&self, index: bool) -> &N {
         return match index {
@@ -509,13 +506,13 @@ impl<N: ComplexInnerType> Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Default for Complex<N> {
+impl<N: Float> Default for Complex<N> {
     fn default() -> Self {
         return Self::zero();
     }
 }
 
-impl<N: ComplexInnerType> Add<N> for Complex<N> {
+impl<N: Float> Add<N> for Complex<N> {
     type Output = Self;
 
     fn add(self, other: N) -> Self::Output {
@@ -526,7 +523,7 @@ impl<N: ComplexInnerType> Add<N> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Add for Complex<N> {
+impl<N: Float> Add for Complex<N> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -534,19 +531,19 @@ impl<N: ComplexInnerType> Add for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> AddAssign<N> for Complex<N> {
+impl<N: Float> AddAssign<N> for Complex<N> {
     fn add_assign(&mut self, other: N) {
         *self = <Self as Add<N>>::add(*self, other);
     }
 }
 
-impl<N: ComplexInnerType> AddAssign for Complex<N> {
+impl<N: Float> AddAssign for Complex<N> {
     fn add_assign(&mut self, other: Self) {
         Self::add_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> BitAnd for Complex<N> {
+impl<N: Float> BitAnd for Complex<N> {
     type Output = Self;
 
     fn bitand(self, other: Self) -> Self::Output {
@@ -554,13 +551,13 @@ impl<N: ComplexInnerType> BitAnd for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> BitAndAssign for Complex<N> {
+impl<N: Float> BitAndAssign for Complex<N> {
     fn bitand_assign(&mut self, other: Self) {
         Self::bitand_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> BitOr for Complex<N> {
+impl<N: Float> BitOr for Complex<N> {
     type Output = Self;
 
     fn bitor(self, other: Self) -> Self::Output {
@@ -568,13 +565,13 @@ impl<N: ComplexInnerType> BitOr for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> BitOrAssign for Complex<N> {
+impl<N: Float> BitOrAssign for Complex<N> {
     fn bitor_assign(&mut self, other: Self) {
         Self::bitor_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> BitXor for Complex<N> {
+impl<N: Float> BitXor for Complex<N> {
     type Output = Self;
 
     fn bitxor(self, other: Self) -> Self::Output {
@@ -582,13 +579,13 @@ impl<N: ComplexInnerType> BitXor for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> BitXorAssign for Complex<N> {
+impl<N: Float> BitXorAssign for Complex<N> {
     fn bitxor_assign(&mut self, other: Self) {
         Self::bitxor_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> Deref for Complex<N> {
+impl<N: Float> Deref for Complex<N> {
     type Target = (N, N);
 
     fn deref(&self) -> &Self::Target {
@@ -599,7 +596,7 @@ impl<N: ComplexInnerType> Deref for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> DerefMut for Complex<N> {
+impl<N: Float> DerefMut for Complex<N> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         let ptr = &mut (&mut self.real, &mut self.imaginary) as *mut (&mut N, &mut N) as *mut &mut (N, N);
         let ptr: &mut (N, N) = unsafe { &mut *ptr };
@@ -608,7 +605,7 @@ impl<N: ComplexInnerType> DerefMut for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Div<N> for Complex<N> {
+impl<N: Float> Div<N> for Complex<N> {
     type Output = Self;
 
     fn div(self, other: N) -> Self {
@@ -619,7 +616,7 @@ impl<N: ComplexInnerType> Div<N> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Div for Complex<N> {
+impl<N: Float> Div for Complex<N> {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
@@ -627,19 +624,19 @@ impl<N: ComplexInnerType> Div for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> DivAssign<N> for Complex<N> {
+impl<N: Float> DivAssign<N> for Complex<N> {
     fn div_assign(&mut self, other: N) {
         *self = <Self as Div<N>>::div(*self, other);
     }
 }
 
-impl<N: ComplexInnerType> DivAssign for Complex<N> {
+impl<N: Float> DivAssign for Complex<N> {
     fn div_assign(&mut self, other: Self) {
         Self::div_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> Index<bool> for Complex<N> {
+impl<N: Float> Index<bool> for Complex<N> {
     type Output = N;
 
     fn index(&self, index: bool) -> &Self::Output {
@@ -647,13 +644,13 @@ impl<N: ComplexInnerType> Index<bool> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> IndexMut<bool> for Complex<N> {
+impl<N: Float> IndexMut<bool> for Complex<N> {
     fn index_mut(&mut self, index: bool) -> &mut Self::Output {
         return Self::index_mut(self, index);
     }
 }
 
-impl<N: ComplexInnerType> Mul<N> for Complex<N> {
+impl<N: Float> Mul<N> for Complex<N> {
     type Output = Self;
 
     fn mul(self, other: N) -> Self {
@@ -664,7 +661,7 @@ impl<N: ComplexInnerType> Mul<N> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Mul for Complex<N> {
+impl<N: Float> Mul for Complex<N> {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
@@ -672,19 +669,19 @@ impl<N: ComplexInnerType> Mul for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> MulAssign<N> for Complex<N> {
+impl<N: Float> MulAssign<N> for Complex<N> {
     fn mul_assign(&mut self, other: N) {
         *self = <Self as Mul<N>>::mul(*self, other);
     }
 }
 
-impl<N: ComplexInnerType> MulAssign for Complex<N> {
+impl<N: Float> MulAssign for Complex<N> {
     fn mul_assign(&mut self, other: Self) {
         Self::mul_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> Neg for Complex<N> {
+impl<N: Float> Neg for Complex<N> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
@@ -692,7 +689,7 @@ impl<N: ComplexInnerType> Neg for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Not for Complex<N> {
+impl<N: Float> Not for Complex<N> {
     type Output = Self;
 
     fn not(self) -> Self::Output {
@@ -700,35 +697,35 @@ impl<N: ComplexInnerType> Not for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Shl<usize> for Complex<N> {
-    type Output = Self;
+// impl<N: Float> Shl<usize> for Complex<N> {
+//     type Output = Self;
+//
+//     fn shl(self, rhs: usize) -> Self::Output {
+//         return Self::shl(&self, rhs);
+//     }
+// }
+//
+// impl<N: Float> ShlAssign<usize> for Complex<N> {
+//     fn shl_assign(&mut self, rhs: usize) {
+//         Self::shl_assign(self, rhs);
+//     }
+// }
+//
+// impl<N: Float> Shr<usize> for Complex<N> {
+//     type Output = Self;
+//
+//     fn shr(self, rhs: usize) -> Self::Output {
+//         return Self::shr(&self, rhs);
+//     }
+// }
+//
+// impl<N: Float> ShrAssign<usize> for Complex<N> {
+//     fn shr_assign(&mut self, rhs: usize) {
+//         Self::shr_assign(self, rhs);
+//     }
+// }
 
-    fn shl(self, rhs: usize) -> Self::Output {
-        return Self::shl(&self, rhs);
-    }
-}
-
-impl<N: ComplexInnerType> ShlAssign<usize> for Complex<N> {
-    fn shl_assign(&mut self, rhs: usize) {
-        Self::shl_assign(self, rhs);
-    }
-}
-
-impl<N: ComplexInnerType> Shr<usize> for Complex<N> {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        return Self::shr(&self, rhs);
-    }
-}
-
-impl<N: ComplexInnerType> ShrAssign<usize> for Complex<N> {
-    fn shr_assign(&mut self, rhs: usize) {
-        Self::shr_assign(self, rhs);
-    }
-}
-
-impl<N: ComplexInnerType> Sub<N> for Complex<N> {
+impl<N: Float> Sub<N> for Complex<N> {
     type Output = Self;
 
     fn sub(self, other: N) -> Self::Output {
@@ -739,7 +736,7 @@ impl<N: ComplexInnerType> Sub<N> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Sub for Complex<N> {
+impl<N: Float> Sub for Complex<N> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self::Output {
@@ -747,19 +744,19 @@ impl<N: ComplexInnerType> Sub for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> SubAssign<N> for Complex<N> {
+impl<N: Float> SubAssign<N> for Complex<N> {
     fn sub_assign(&mut self, other: N) {
         *self = <Self as Sub<N>>::sub(*self, other);
     }
 }
 
-impl<N: ComplexInnerType> SubAssign for Complex<N> {
+impl<N: Float> SubAssign for Complex<N> {
     fn sub_assign(&mut self, other: Self) {
         Self::sub_assign(self, &other);
     }
 }
 
-impl<N: ComplexInnerType> Inv for Complex<N> {
+impl<N: Float> Inv for Complex<N> {
     type Output = Self;
 
     fn inv(self) -> Self::Output {
@@ -767,7 +764,7 @@ impl<N: ComplexInnerType> Inv for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Pow<N> for Complex<N> {
+impl<N: Float> Pow<N> for Complex<N> {
     type Output = Self;
 
     fn pow(self, other: N) -> Self::Output {
@@ -775,7 +772,7 @@ impl<N: ComplexInnerType> Pow<N> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Pow<Self> for Complex<N> {
+impl<N: Float> Pow<Self> for Complex<N> {
     type Output = Self;
 
     fn pow(self, other: Self) -> Self::Output {
@@ -783,7 +780,7 @@ impl<N: ComplexInnerType> Pow<Self> for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+Bounded> Bounded for Complex<N> {
+impl<N: Float+Bounded> Bounded for Complex<N> {
     fn min_value() -> Self {
         return Self::min_value();
     }
@@ -793,7 +790,7 @@ impl<N: ComplexInnerType+Bounded> Bounded for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> Zero for Complex<N> {
+impl<N: Float> Zero for Complex<N> {
     fn zero() -> Self {
         return Self::zero();
     }
@@ -807,14 +804,14 @@ impl<N: ComplexInnerType> Zero for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+ConstZero> ConstZero for Complex<N> {
+impl<N: Float+ConstZero> ConstZero for Complex<N> {
     const ZERO: Self = Self {
         real: N::ZERO,
         imaginary: N::ZERO
     };
 }
 
-impl<N: ComplexInnerType> One for Complex<N> {
+impl<N: Float> One for Complex<N> {
     fn one() -> Self {
         return Self::one();
     }
@@ -828,14 +825,14 @@ impl<N: ComplexInnerType> One for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+ConstZero+ConstOne> ConstOne for Complex<N> {
+impl<N: Float+ConstZero+ConstOne> ConstOne for Complex<N> {
     const ONE: Self = Self {
         real: N::ONE,
         imaginary: N::ZERO
     };
 }
 
-impl<N: ComplexInnerType+ConstZero+FloatConst> FloatConst for Complex<N> {
+impl<N: Float+ConstZero+FloatConst> FloatConst for Complex<N> {
     fn E() -> Self {
         return Self {
             real: N::E(),
@@ -970,81 +967,81 @@ impl<N: ComplexInnerType+ConstZero+FloatConst> FloatConst for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType> From<(N, N)> for Complex<N> {
+impl<N: Float> From<(N, N)> for Complex<N> {
     fn from((real, imaginary): (N, N)) -> Self {
         return Self::new(real, imaginary);
     }
 }
 
-impl<N: ComplexInnerType> From<N> for Complex<N> {
+impl<N: Float> From<N> for Complex<N> {
     fn from(real: N) -> Self {
         return Self::from_real(real);
     }
 }
 
-impl<N: ComplexInnerType> Into<(N, N)> for Complex<N> {
+impl<N: Float> Into<(N, N)> for Complex<N> {
     fn into(self) -> (N, N) {
         return (self.real, self.imaginary);
     }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<i64>> AsPrimitive<i64> for Complex<N> {
+impl<N: Float+AsPrimitive<i64>> AsPrimitive<i64> for Complex<N> {
     fn as_(self) -> i64 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<u64>> AsPrimitive<u64> for Complex<N> {
+impl<N: Float+AsPrimitive<u64>> AsPrimitive<u64> for Complex<N> {
     fn as_(self) -> u64 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<isize>> AsPrimitive<isize> for Complex<N> {
+impl<N: Float+AsPrimitive<isize>> AsPrimitive<isize> for Complex<N> {
     fn as_(self) -> isize { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<i8>> AsPrimitive<i8> for Complex<N> {
+impl<N: Float+AsPrimitive<i8>> AsPrimitive<i8> for Complex<N> {
     fn as_(self) -> i8 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<i16>> AsPrimitive<i16> for Complex<N> {
+impl<N: Float+AsPrimitive<i16>> AsPrimitive<i16> for Complex<N> {
     fn as_(self) -> i16 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<i32>> AsPrimitive<i32> for Complex<N> {
+impl<N: Float+AsPrimitive<i32>> AsPrimitive<i32> for Complex<N> {
     fn as_(self) -> i32 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<i128>> AsPrimitive<i128> for Complex<N> {
+impl<N: Float+AsPrimitive<i128>> AsPrimitive<i128> for Complex<N> {
     fn as_(self) -> i128 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<usize>> AsPrimitive<usize> for Complex<N> {
+impl<N: Float+AsPrimitive<usize>> AsPrimitive<usize> for Complex<N> {
     fn as_(self) -> usize { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<u8>> AsPrimitive<u8> for Complex<N> {
+impl<N: Float+AsPrimitive<u8>> AsPrimitive<u8> for Complex<N> {
     fn as_(self) -> u8 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<u16>> AsPrimitive<u16> for Complex<N> {
+impl<N: Float+AsPrimitive<u16>> AsPrimitive<u16> for Complex<N> {
     fn as_(self) -> u16 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<u32>> AsPrimitive<u32> for Complex<N> {
+impl<N: Float+AsPrimitive<u32>> AsPrimitive<u32> for Complex<N> {
     fn as_(self) -> u32 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<u128>> AsPrimitive<u128> for Complex<N> {
+impl<N: Float+AsPrimitive<u128>> AsPrimitive<u128> for Complex<N> {
     fn as_(self) -> u128 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<f32>> AsPrimitive<f32> for Complex<N> {
+impl<N: Float+AsPrimitive<f32>> AsPrimitive<f32> for Complex<N> {
     fn as_(self) -> f32 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+AsPrimitive<f64>> AsPrimitive<f64> for Complex<N> {
+impl<N: Float+AsPrimitive<f64>> AsPrimitive<f64> for Complex<N> {
     fn as_(self) -> f64 { self.real.as_() }
 }
 
-impl<N: ComplexInnerType+FromPrimitive> FromPrimitive for Complex<N> {
+impl<N: Float+FromPrimitive> FromPrimitive for Complex<N> {
     fn from_i64(n: i64) -> Option<Self> {
         return Some(Self {
             real: N::from_i64(n)?,
@@ -1144,7 +1141,7 @@ impl<N: ComplexInnerType+FromPrimitive> FromPrimitive for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+NumCast> NumCast for Complex<N> {
+impl<N: Float+NumCast> NumCast for Complex<N> {
     fn from<T: ToPrimitive>(n: T) -> Option<Self> {
         return Some(Self {
             real: N::from(n)?,
@@ -1153,7 +1150,7 @@ impl<N: ComplexInnerType+NumCast> NumCast for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+ToPrimitive> ToPrimitive for Complex<N> {
+impl<N: Float+ToPrimitive> ToPrimitive for Complex<N> {
     fn to_i64(&self) -> Option<i64> { self.real.to_i64() }
 
     fn to_u64(&self) -> Option<u64> { self.real.to_u64() }
@@ -1183,7 +1180,7 @@ impl<N: ComplexInnerType+ToPrimitive> ToPrimitive for Complex<N> {
     fn to_f64(&self) -> Option<f64> { self.real.to_f64() }
 }
 
-impl<N: ComplexInnerType+CheckedAdd> CheckedAdd for Complex<N> {
+impl<N: Float+CheckedAdd> CheckedAdd for Complex<N> {
     fn checked_add(&self, other: &Self) -> Option<Self> {
         return Some(Self {
             real: self.real.checked_add(&other.real)?,
@@ -1192,7 +1189,7 @@ impl<N: ComplexInnerType+CheckedAdd> CheckedAdd for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+CheckedSub> CheckedSub for Complex<N> {
+impl<N: Float+CheckedSub> CheckedSub for Complex<N> {
     fn checked_sub(&self, other: &Self) -> Option<Self> {
         return Some(Self {
             real: self.real.checked_sub(&other.real)?,
@@ -1201,7 +1198,7 @@ impl<N: ComplexInnerType+CheckedSub> CheckedSub for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+CheckedAdd+CheckedSub+CheckedMul> CheckedMul for Complex<N> {
+impl<N: Float+CheckedAdd+CheckedSub+CheckedMul> CheckedMul for Complex<N> {
     fn checked_mul(&self, other: &Self) -> Option<Self> {
         return Some(Self {
             real: self.real.checked_mul(&other.real)?.checked_sub(&self.imaginary.checked_mul(&other.imaginary)?)?,
@@ -1210,7 +1207,7 @@ impl<N: ComplexInnerType+CheckedAdd+CheckedSub+CheckedMul> CheckedMul for Comple
     }
 }
 
-impl<N: ComplexInnerType+CheckedAdd+CheckedSub+CheckedMul+CheckedDiv> CheckedDiv for Complex<N> {
+impl<N: Float+CheckedAdd+CheckedSub+CheckedMul+CheckedDiv> CheckedDiv for Complex<N> {
     fn checked_div(&self, other: &Self) -> Option<Self> {
         let denominator = other.real.checked_mul(&other.real)?.checked_add(&other.imaginary.checked_mul(&other.imaginary)?)?;
 
@@ -1221,7 +1218,7 @@ impl<N: ComplexInnerType+CheckedAdd+CheckedSub+CheckedMul+CheckedDiv> CheckedDiv
     }
 }
 
-impl<N: ComplexInnerType+CheckedNeg> CheckedNeg for Complex<N> {
+impl<N: Float+CheckedNeg> CheckedNeg for Complex<N> {
     fn checked_neg(&self) -> Option<Self> {
         return Some(Self {
             real: self.real.checked_neg()?,
@@ -1230,7 +1227,7 @@ impl<N: ComplexInnerType+CheckedNeg> CheckedNeg for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+Display> Display for Complex<N> {
+impl<N: Float+Display> Display for Complex<N> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let rsign = if self.real.is_sign_negative() { '-' } else { '+' };
         let isign = if self.imaginary.is_sign_negative() { '-' } else { '+' };
@@ -1239,7 +1236,7 @@ impl<N: ComplexInnerType+Display> Display for Complex<N> {
     }
 }
 
-impl<N: ComplexInnerType+Debug> Debug for Complex<N> {
+impl<N: Float+Debug> Debug for Complex<N> {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         return write!(formatter, "Complex {{ real: {:?}, imaginary: {:?}i }}", self.real, self.imaginary);
     }
