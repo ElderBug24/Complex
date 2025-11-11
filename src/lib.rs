@@ -156,6 +156,17 @@ impl<N: Float> Complex<N> {
         *self = Self::add(self, other);
     }
 
+    pub fn addf(&self, other: N) -> Self {
+        return Self {
+            real: self.real + other,
+            imaginary: self.imaginary
+        };
+    }
+
+    pub fn addf_assign(&mut self, other: N) {
+        *self = Self::addf(self, other);
+    }
+
     pub fn sub(&self, other: &Self) -> Self {
         return Self {
             real: self.real - other.real,
@@ -165,6 +176,17 @@ impl<N: Float> Complex<N> {
 
     pub fn sub_assign(&mut self, other: &Self) {
         *self = Self::sub(self, other);
+    }
+
+    pub fn subf(&self, other: N) -> Self {
+        return Self {
+            real: self.real - other,
+            imaginary: self.imaginary
+        };
+    }
+
+    pub fn subf_assign(&mut self, other: N) {
+        *self = Self::subf(self, other);
     }
 
     pub fn mul(&self, other: &Self) -> Self {
@@ -178,6 +200,17 @@ impl<N: Float> Complex<N> {
         *self = Self::mul(self, other);
     }
 
+    pub fn mulf(&self, other: N) -> Self {
+        return Self {
+            real: self.real * other,
+            imaginary: self.imaginary * other
+        };
+    }
+
+    pub fn mulf_assign(&mut self, other: N) {
+        *self = Self::mulf(self, other);
+    }
+
     pub fn div(&self, other: &Self) -> Self {
         let denominator = other.real * other.real + other.imaginary * other.imaginary;
         return Self {
@@ -188,6 +221,17 @@ impl<N: Float> Complex<N> {
 
     pub fn div_assign(&mut self, other: &Self) {
         *self = Self::div(self, other);
+    }
+
+    pub fn divf(&self, other: N) -> Self {
+        return Self {
+            real: self.real / other,
+            imaginary: self.imaginary / other
+        };
+    }
+
+    pub fn divf_assign(&mut self, other: N) {
+        *self = Self::divf(self, other);
     }
 
     pub fn neg(&self) -> Self {
@@ -204,6 +248,10 @@ impl<N: Float> Complex<N> {
             real: self.real / divisor,
             imaginary: -self.imaginary / divisor
         };
+    }
+
+    pub fn inv(&self) -> Self {
+        return Self::recip(self);
     }
 
     pub fn conj(&self) -> Self {
@@ -271,7 +319,7 @@ impl<N: Float> Complex<N> {
     }
 
     pub fn log(&self, base: N) -> Self {
-        return self.ln() * Self::from_real(base).ln().recip();
+        return Self::div(&self.ln(), &Self::from_real(base).ln());
     }
 
     pub fn copysign(&self, sign: &Self) -> Self {
@@ -325,7 +373,7 @@ impl<N: Float> Complex<N> {
         return (self.ln() * Self::from_real(exponent)).exp();
     }
 
-    pub fn powz(&self, other: &Self) -> Self {
+    pub fn pow(&self, other: &Self) -> Self {
         let r = self.amplitude();
         let arg = self.argument();
         let m = r.powf(other.real) * (-other.imaginary * arg).exp();
@@ -516,10 +564,7 @@ impl<N: Float> Add<N> for Complex<N> {
     type Output = Self;
 
     fn add(self, other: N) -> Self::Output {
-        return Self {
-            real: self.real + other,
-            imaginary: self.imaginary
-        };
+        return Self::addf(&self, other);
     }
 }
 
@@ -533,7 +578,7 @@ impl<N: Float> Add for Complex<N> {
 
 impl<N: Float> AddAssign<N> for Complex<N> {
     fn add_assign(&mut self, other: N) {
-        *self = <Self as Add<N>>::add(*self, other);
+        Self::addf_assign(self, other);
     }
 }
 
@@ -609,10 +654,7 @@ impl<N: Float> Div<N> for Complex<N> {
     type Output = Self;
 
     fn div(self, other: N) -> Self {
-        return Self {
-            real: self.real * other,
-            imaginary: self.imaginary * other
-        };
+        return Self::divf(&self, other);
     }
 }
 
@@ -626,7 +668,7 @@ impl<N: Float> Div for Complex<N> {
 
 impl<N: Float> DivAssign<N> for Complex<N> {
     fn div_assign(&mut self, other: N) {
-        *self = <Self as Div<N>>::div(*self, other);
+        Self::divf_assign(self, other);
     }
 }
 
@@ -654,10 +696,7 @@ impl<N: Float> Mul<N> for Complex<N> {
     type Output = Self;
 
     fn mul(self, other: N) -> Self {
-        return Self {
-            real: self.real * other,
-            imaginary: self.imaginary * other
-        };
+        return Self::mulf(&self, other);
     }
 }
 
@@ -671,7 +710,7 @@ impl<N: Float> Mul for Complex<N> {
 
 impl<N: Float> MulAssign<N> for Complex<N> {
     fn mul_assign(&mut self, other: N) {
-        *self = <Self as Mul<N>>::mul(*self, other);
+        Self::mulf_assign(self, other);
     }
 }
 
@@ -729,10 +768,7 @@ impl<N: Float> Sub<N> for Complex<N> {
     type Output = Self;
 
     fn sub(self, other: N) -> Self::Output {
-        return Self {
-            real: self.real - other,
-            imaginary: self.imaginary
-        };
+        return Self::subf(&self, other);
     }
 }
 
@@ -746,7 +782,7 @@ impl<N: Float> Sub for Complex<N> {
 
 impl<N: Float> SubAssign<N> for Complex<N> {
     fn sub_assign(&mut self, other: N) {
-        *self = <Self as Sub<N>>::sub(*self, other);
+        Self::subf_assign(self, other);
     }
 }
 
@@ -776,7 +812,7 @@ impl<N: Float> Pow<Self> for Complex<N> {
     type Output = Self;
 
     fn pow(self, other: Self) -> Self::Output {
-        return self.powz(&other);
+        return Self::pow(&self, &other);
     }
 }
 
