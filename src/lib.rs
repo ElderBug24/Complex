@@ -1,7 +1,7 @@
 mod traits_ops;
 mod traits_num_traits;
 
-pub use std::fmt::{self, Debug, Display};
+pub use core::fmt::{self, Debug, Display};
 pub use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Deref, DerefMut, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Not, Sub, SubAssign};
 
 pub use num_traits::{Bounded, AsPrimitive, FromPrimitive, NumCast, ToPrimitive, ConstOne, ConstZero, One, Zero, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedSub, Float, FloatConst, Inv, Pow};
@@ -297,13 +297,6 @@ impl<N: Float> Complex<N> {
         };
     }
 
-    pub fn ln(&self) -> Self {
-        return Self {
-            real: self.amplitude().ln(),
-            imaginary: self.argument()
-        };
-    }
-
     pub fn exp(&self) -> Self {
         let exp_real = self.real.exp();
         return Self {
@@ -312,8 +305,37 @@ impl<N: Float> Complex<N> {
         };
     }
 
+    pub fn ln(&self) -> Self {
+        return Self {
+            real: self.amplitude().ln(),
+            imaginary: self.argument()
+        };
+    }
+
     pub fn log(&self, base: N) -> Self {
         return Self::div(&self.ln(), &Self::from_real(base).ln());
+    }
+
+    pub fn sin(&self) -> Self {
+        let a = self.imaginary.exp();
+        let b = self.imaginary.neg().exp();
+        let two = N::one() + N::one();
+
+        return Self {
+            real: self.real.sin() * (b + a) / two,
+            imaginary: self.real.cos() * (b - a) / two
+        };
+    }
+
+    pub fn cos(&self) -> Self {
+        let a = self.imaginary.exp();
+        let b = self.imaginary.neg().exp();
+        let two = N::one() + N::one();
+
+        return Self {
+            real: self.real.cos() * (b + a) / two,
+            imaginary: self.real.sin() * (b - a) / two
+        };
     }
 
     pub fn copysign(&self, sign: &Self) -> Self {
@@ -471,7 +493,7 @@ impl<N: Float+Display> Display for Complex<N> {
         let rsign = if self.real.is_sign_negative() { '-' } else { '+' };
         let isign = if self.imaginary.is_sign_negative() { '-' } else { '+' };
 
-        return write!(formatter, "( {rsign} {} {isign} {}i )", self.real.abs(), self.imaginary.abs());
+        return write!(formatter, "{rsign} {} {isign} {}i", self.real.abs(), self.imaginary.abs());
     }
 }
 
